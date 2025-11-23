@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+    <form action="{{ url_for('apply_rules') }}" method="POST">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-sync me-2"></i> Apply Rules
+        </button>
+    </form>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+<div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show" role="alert">
+    {{ message }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+</div>
+{% endfor %}
+{% endif %}
+{% endwith %}
+
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 p-3 rounded me-3">
+                    <i class="fas fa-users fa-2x text-primary"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1">Total Users</h6>
+                    <h3 class="mb-0 fw-bold">{{ user_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="bg-warning bg-opacity-10 p-3 rounded me-3">
+                    <i class="fas fa-list-ul fa-2x text-warning"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1">Active Rules</h6>
+                    <h3 class="mb-0 fw-bold">{{ rule_count }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="bg-success bg-opacity-10 p-3 rounded me-3">
+                    <i class="fas fa-network-wired fa-2x text-success"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1">Network</h6>
+                    <h3 class="mb-0 fw-bold fs-5">{{ system_config.user_network_cidr }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-3">
+        <h6 class="m-0 font-weight-bold text-primary">System Status</h6>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <p class="mb-1"><strong>Host IP:</strong></p>
+                <p class="text-muted">{{ system_config.host_ip }}</p>
+            </div>
+            <div class="col-md-4">
+                <p class="mb-1"><strong>Database:</strong></p>
+                <p class="text-success"><i class="fas fa-check-circle me-1"></i> Connected</p>
+            </div>
+            <div class="col-md-4">
+                <p class="mb-1"><strong>IPTables:</strong></p>
+                {% if iptables_available %}
+                <p class="text-success"><i class="fas fa-check-circle me-1"></i> Available</p>
+                {% else %}
+                <p class="text-danger"><i class="fas fa-times-circle me-1"></i> Not Found</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
