@@ -56,6 +56,20 @@ class IptablesManager:
         # We do NOT set policies here to avoid overriding existing ones if using -n
         # But we DO flush the chains we manage
         lines.append("-F FORWARD")
+        lines.append("-F INPUT") # Manage INPUT to ensure access
+        
+        # System Access Rules (INPUT)
+        # 1. Allow Loopback
+        lines.append("-A INPUT -i lo -j ACCEPT")
+        # 2. Allow Established/Related
+        lines.append("-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT")
+        # 3. Allow SSH
+        lines.append("-A INPUT -p tcp --dport 22 -j ACCEPT")
+        # 4. Allow Portal (Flask default 5000, plus standard web ports)
+        lines.append("-A INPUT -p tcp --dport 5000 -j ACCEPT")
+        lines.append("-A INPUT -p tcp --dport 80 -j ACCEPT")
+        lines.append("-A INPUT -p tcp --dport 443 -j ACCEPT")
+        
         lines.extend(filter_rules)
         lines.append("COMMIT")
         
