@@ -14,6 +14,11 @@ def check_system_dependencies():
     if not iptables_path:
         logger.error("iptables not found. Please install iptables.")
         return False
+        
+    # Check for persistence tools (optional but recommended)
+    if not shutil.which("netfilter-persistent") and not shutil.which("iptables-save"):
+         logger.warning("Persistence tools (netfilter-persistent or iptables-save) not found. Rules may not survive reboot.")
+         
     return True
 
 def get_host_ip():

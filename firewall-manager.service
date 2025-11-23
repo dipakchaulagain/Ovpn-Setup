@@ -1,0 +1,15 @@
+[Unit]
+Description=Firewall Manager Web App
+After=network.target
+
+[Service]
+User=fwmanager
+Group=fwmanager
+WorkingDirectory=/opt/firewall-manager
+ExecStart=/opt/firewall-manager/venv/bin/python app.py
+Restart=always
+Environment="FLASK_APP=app.py"
+Environment="FLASK_ENV=production"
+
+[Install]
+WantedBy=multi-user.target
