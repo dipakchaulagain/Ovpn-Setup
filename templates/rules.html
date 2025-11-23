@@ -58,168 +58,110 @@
 <div class="card shadow-sm border-0">
     <div class="card-body p-0">
         <div class="table-responsive">
-            </button>
-            </form>
-            </td>
-            </tr>
-            {% endfor %}
-            {% extends "base.html" %}
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="bg-light">
+                    <tr>
+                        {% if not user %}<th class="border-0 py-3 ps-4">User</th>{% endif %}
+                        <th class="border-0 py-3 {% if user %}ps-4{% endif %}">Destination IP</th>
+                        <th class="border-0 py-3">Port</th>
+                        <th class="border-0 py-3">Protocol</th>
+                        <th class="border-0 py-3">Action</th>
+                        <th class="border-0 py-3 text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for rule in rules %}
+                    <tr>
+                        {% if not user %}<td class="ps-4">{{ rule.user.username }}</td>{% endif %}
+                        <td class="{% if user %}ps-4{% endif %}"><code
+                                class="text-dark">{{ rule.destination_ip }}</code></td>
+                        <td>{{ rule.destination_port or 'Any' }}</td>
+                        <td><span class="badge bg-secondary">{{ rule.protocol|upper }}</span></td>
+                        <td>
+                            {% if rule.action == 'ACCEPT' %}
+                            <span class="badge bg-success bg-opacity-10 text-success">ACCEPT</span>
+                            {% else %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger">DROP</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <form action="{{ url_for('delete_rule', rule_id=rule.id) }}" method="POST"
+                                style="display:inline;" onsubmit="return confirm('Delete this rule?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Rule">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-            {% block title %}Rules{% endblock %}
+{% endblock %}
 
-            {% block content %}
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 class="h3 mb-0 text-gray-800">Firewall Rules {{ 'for ' + user.username if user else '' }}
-                </h1>
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addRuleModal">
-                    <i class="fas fa-plus me-2"></i> Add Rule
-                </button>
+{% block modals %}
+<!-- Add Rule Modal -->
+<div class="modal fade" id="addRuleModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Rule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <form action="{{ url_for('add_rule_route') }}" method="POST">
+                <div class="modal-body">
+                    {% if user %}
+                    <input type="hidden" name="user_id" value="{{ user.id }}">
+                    {% else %}
+                    <div class="mb-3">
+                        <label class="form-label">User</label>
+                        <select name="user_id" class="form-select" required>
+                            {% for u in all_users %}
+                            <option value="{{ u.id }}">{{ u.username }} ({{ u.ip_address }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
 
-            {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-            {% for category, message in messages %}
-            <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show"
-                role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            {% endfor %}
-            {% endif %}
-            {% endwith %}
+                    <div class="mb-3">
+                        <label class="form-label">Destination IP</label>
+                        <input type="text" name="destination_ip" class="form-control" placeholder="e.g. 8.8.8.8"
+                            required>
+                    </div>
 
-            <div class="card shadow-sm border-0 mb-4">
-                <div class="card-body">
-                    <form method="GET" class="row g-3 align-items-center mb-0">
-                        {% if not user %}
-                        <div class="col-auto">
-                            <select name="user_id" class="form-select" onchange="this.form.submit()">
-                                <option value="">All Users</option>
-                                {% for u in all_users %}
-                                <option value="{{ u.id }}" {% if request.args.get('user_id')|int==u.id %}selected{%
-                                    endif %}>{{
-                                    u.username }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        {% endif %}
-                        <div class="col-auto">
-                            <select name="protocol" class="form-select" onchange="this.form.submit()">
-                                <option value="">All Protocols</option>
-                                <option value="tcp" {% if request.args.get('protocol')=='tcp' %}selected{% endif %}>TCP
-                                </option>
-                                <option value="udp" {% if request.args.get('protocol')=='udp' %}selected{% endif %}>UDP
-                                </option>
-                                <option value="icmp" {% if request.args.get('protocol')=='icmp' %}selected{% endif %}>
-                                    ICMP</option>
-                            </select>
-                        </div>
-                        <div class="col-auto">
-                            <select name="action" class="form-select" onchange="this.form.submit()">
-                                <option value="">All Actions</option>
-                                <option value="ACCEPT" {% if request.args.get('action')=='ACCEPT' %}selected{% endif %}>
-                                    ACCEPT
-                                </option>
-                                <option value="DROP" {% if request.args.get('action')=='DROP' %}selected{% endif %}>DROP
-                                </option>
-                            </select>
-                        </div>
-                    </form>
-                </div>
-            </div>
+                    <div class="mb-3">
+                        <label class="form-label">Protocol</label>
+                        <select name="protocol" class="form-select">
+                            <option value="tcp">TCP</option>
+                            <option value="udp">UDP</option>
+                            <option value="icmp">ICMP</option>
+                            <option value="all">All</option>
+                        </select>
+                    </div>
 
-            <div class="card shadow-sm border-0">
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0 align-middle">
-                            <thead class="bg-light">
-                                <tr>
-                                    {% if not user %}<th class="border-0 py-3 ps-4">User</th>{% endif %}
-                                    <th class="border-0 py-3 {% if user %}ps-4{% endif %}">Destination IP</th>
-                                    <th class="border-0 py-3">Port</th>
-                                    <th class="border-0 py-3">Protocol</th>
-                                    <th class="border-0 py-3">Action</th>
-                                    <th class="border-0 py-3">Type</th>
-                                    <th class="border-0 py-3 text-end pe-4">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for rule in rules %}
-                                <tr>
-                                    {% if not user %}<td class="ps-4">{{ rule.user.username }}</td>{% endif %}
-                                    <td class="{% if user %}ps-4{% endif %}"><code
-                                            class="text-dark">{{ rule.destination_ip }}</code></td>
-                                    <td>{{ rule.destination_port or 'Any' }}</td>
-                                    <td><span class="badge bg-secondary">{{ rule.protocol|upper }}</span></td>
-                                    <td>
-                                        {% if rule.action == 'ACCEPT' %}
-                                        <span class="badge bg-success bg-opacity-10 text-success">ACCEPT</span>
-                                        {% else %}
-                                        <span class="badge bg-danger bg-opacity-10 text-danger">DROP</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>{{ rule.forward_type }}</td>
-                                    <td class="text-end pe-4">
-                                        <form action="{{ url_for('delete_rule', rule_id=rule.id) }}" method="POST"
-                                            style="display:inline;" onsubmit="return confirm('Delete this rule?');">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                title="Delete Rule">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <div class="mb-3">
+                        <label class="form-label">Destination Port</label>
+                        <input type="number" name="destination_port" class="form-control"
+                            placeholder="e.g. 80 (Optional)">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Action</label>
+                        <select name="action" class="form-select">
+                            <option value="ACCEPT">ACCEPT</option>
+                            <option value="DROP">DROP</option>
+                        </select>
                     </div>
                 </div>
-            </div>
-
-            {% endblock %}
-
-            {% block modals %}
-            <!-- Add Rule Modal -->
-            <div class="modal fade" id="addRuleModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">Add New Rule</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <form action="{{ url_for('add_rule_route') }}" method="POST">
-                            <div class="modal-body">
-                                {% if user %}
-                                <input type="hidden" name="user_id" value="{{ user.id }}">
-                                {% else %}
-                                <div class="mb-3">
-                                    <label class="form-label">User</label>
-                                    <select name="user_id" class="form-select" required>
-                                        {% for u in all_users %}
-                                        <option value="{{ u.id }}">{{ u.username }} ({{ u.ip_address }})
-                                        </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                                {% endif %}
-
-                                <div class="mb-3">
-                                    <label class="form-label">Destination IP</label>
-                                    <input type="text" name="destination_ip" class="form-control"
-                                        placeholder="e.g. 8.8.8.8" required>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label class="form-label">Protocol</label>
-                                    <select name="protocol" class="form-select">
-                                        <option value="tcp">TCP</option>
-                                        <option value="udp">UDP</option>
-                                        <option value="icmp">ICMP</option>
-                                        <option value="all">All</option>
-                                    </select>
-                                </div>
-
-                                <div class="mb-3">
-                                </div>
-                            </div>
-                            {% endblock %}
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Rule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
