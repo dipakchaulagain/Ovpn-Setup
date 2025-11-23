@@ -52,21 +52,9 @@
                         <div class="mb-3">
                             <label for="user_type" class="form-label">User Type</label>
                             <select class="form-select" id="user_type" name="user_type">
-                                <option value="employee" {% if user and user.user_type=='employee' %}selected{% endif
-                                    %}>Employee</option>
-                                <option value="vendor" {% if user and user.user_type=='vendor' %}selected{% endif %}>
-                                    Vendor</option>
-                                <option value="other" {% if user and user.user_type=='other' %}selected{% endif %}>Other
-                                </option>
-                            </select>
-                        </div>
-
-                        <div class="mb-4">
-                            <label for="ip_address" class="form-label">IP Address</label>
-                            <input type="text" class="form-control font-monospace" id="ip_address" name="ip_address"
-                                value="{{ user.ip_address if user else recommended_ip }}" required>
-                            <div class="form-text text-success"><i class="fas fa-check-circle me-1"></i> Recommended: {{
-                                recommended_ip }}</div>
+                                <div class="form-text text-success"><i class="fas fa-check-circle me-1"></i>
+                                    Recommended: {{
+                                    recommended_ip }}</div>
                         </div>
 
                         <div class="d-grid gap-2">

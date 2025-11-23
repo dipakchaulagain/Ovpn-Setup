@@ -44,19 +44,27 @@ def setup():
         user_network_cidr = request.form.get('user_network_cidr')
         
         if host_ip and user_network_cidr:
-            # Save config
-            config = SystemConfig.query.first()
-            if not config:
-                config = SystemConfig(host_ip=host_ip, user_network_cidr=user_network_cidr, is_configured=True)
-                db.session.add(config)
-            else:
-                config.host_ip = host_ip
-                config.user_network_cidr = user_network_cidr
-                config.is_configured = True
-            
-            db.session.commit()
-            flash('System initialized successfully!', 'success')
-            return redirect(url_for('index'))
+            try:
+                # Validate IP
+                ipaddress.ip_address(host_ip)
+                # Validate CIDR
+                ipaddress.ip_network(user_network_cidr)
+                
+                # Save config
+                config = SystemConfig.query.first()
+                if not config:
+                    config = SystemConfig(host_ip=host_ip, user_network_cidr=user_network_cidr, is_configured=True)
+                    db.session.add(config)
+                else:
+                    config.host_ip = host_ip
+                    config.user_network_cidr = user_network_cidr
+                    config.is_configured = True
+                
+                db.session.commit()
+                flash('System initialized successfully!', 'success')
+                return redirect(url_for('index'))
+            except ValueError as e:
+                flash(f'Invalid Input: {str(e)}', 'error')
         else:
             flash('Please fill all fields.', 'error')
             
@@ -118,6 +126,7 @@ def add_user_page():
         email = request.form.get('email')
         contact = request.form.get('contact')
         user_type = request.form.get('user_type')
+        forward_mode = request.form.get('forward_mode', 'ROUTE')
         ip_address = request.form.get('ip_address')
         
         # Validation
@@ -132,6 +141,7 @@ def add_user_page():
                 email=email,
                 contact=contact,
                 user_type=user_type,
+                forward_mode=forward_mode,
                 ip_address=ip_address
             )
             db.session.add(new_user)
@@ -153,6 +163,7 @@ def edit_user(user_id):
         user.email = request.form.get('email')
         user.contact = request.form.get('contact')
         user.user_type = request.form.get('user_type')
+        user.forward_mode = request.form.get('forward_mode', 'ROUTE')
         
         new_ip = request.form.get('ip_address')
         if new_ip != user.ip_address:
@@ -224,7 +235,7 @@ def add_rule_route():
     destination_port = request.form.get('destination_port')
     protocol = request.form.get('protocol')
     action = request.form.get('action')
-    forward_type = request.form.get('forward_type')
+    # forward_type removed
     
     if not destination_port:
         destination_port = None
@@ -234,8 +245,7 @@ def add_rule_route():
         destination_ip=destination_ip,
         destination_port=destination_port,
         protocol=protocol,
-        action=action,
-        forward_type=forward_type
+        action=action
     )
     
     db.session.add(new_rule)

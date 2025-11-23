@@ -93,17 +93,116 @@
                     <a href="{{ url_for('validate_rules') }}"><i class="fas fa-check-circle me-2"></i> Validate</a>
                 </li>
             </ul>
-        </nav>
+            <!DOCTYPE html>
+            <html lang="en">
 
-        <!-- Page Content -->
-        <div id="content">
-            {% block content %}{% endblock %}
-        </div>
-    </div>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Firewall Manager - {% block title %}Dashboard{% endblock %}</title>
+                <!-- Bootstrap 5 CSS -->
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+                <!-- FontAwesome -->
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+                <!-- Custom CSS (Optional overrides) -->
+                <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+                <style>
+                    body {
+                        min-height: 100vh;
+                        display: flex;
+                        flex-direction: column;
+                    }
 
-    <!-- Bootstrap Bundle with Popper -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    {% block scripts %}{% endblock %}
-</body>
+                    .wrapper {
+                        display: flex;
+                        width: 100%;
+                        align-items: stretch;
+                        flex: 1;
+                    }
 
-</html>
+                    #sidebar {
+                        min-width: 250px;
+                        max-width: 250px;
+                        background: #fff;
+                        color: #333;
+                        transition: all 0.3s;
+                        border-right: 1px solid #dee2e6;
+                    }
+
+                    #sidebar .sidebar-header {
+                        padding: 20px;
+                        background: #f8f9fa;
+                        border-bottom: 1px solid #dee2e6;
+                    }
+
+                    #sidebar ul.components {
+                        padding: 20px 0;
+                    }
+
+                    #sidebar ul li a {
+                        padding: 10px 20px;
+                        font-size: 1.1em;
+                        display: block;
+                        color: #333;
+                        text-decoration: none;
+                    }
+
+                    #sidebar ul li a:hover {
+                        background: #e9ecef;
+                    }
+
+                    #sidebar ul li.active>a {
+                        background: #0d6efd;
+                        color: #fff;
+                    }
+
+                    #content {
+                        width: 100%;
+                        padding: 20px;
+                        background-color: #f8f9fa;
+                    }
+                </style>
+                {% block extra_css %}{% endblock %}
+            </head>
+
+            <body>
+                <div class="wrapper">
+                    <!-- Sidebar -->
+                    <nav id="sidebar">
+                        <div class="sidebar-header text-center">
+                            <h3><i class="fas fa-shield-alt text-primary"></i> FW Mgr</h3>
+                        </div>
+
+                        <ul class="list-unstyled components">
+                            <li class="{% if request.endpoint == 'index' %}active{% endif %}">
+                                <a href="{{ url_for('index') }}"><i class="fas fa-tachometer-alt me-2"></i>
+                                    Dashboard</a>
+                            </li>
+                            <li
+                                class="{% if request.endpoint in ['list_users', 'add_user_page', 'edit_user', 'user_rules'] %}active{% endif %}">
+                                <a href="{{ url_for('list_users') }}"><i class="fas fa-users me-2"></i> Users</a>
+                            </li>
+                            <li class="{% if request.endpoint == 'manage_rules' %}active{% endif %}">
+                                <a href="{{ url_for('manage_rules') }}"><i class="fas fa-list me-2"></i> All Rules</a>
+                            </li>
+                            <li class="{% if request.endpoint == 'validate_rules' %}active{% endif %}">
+                                <a href="{{ url_for('validate_rules') }}"><i class="fas fa-check-circle me-2"></i>
+                                    Validate</a>
+                            </li>
+                        </ul>
+                    </nav>
+
+                    <!-- Page Content -->
+                    <div id="content">
+                        {% block content %}{% endblock %}
+                    </div>
+                </div>
+
+                {% block modals %}{% endblock %}
+
+                <!-- Bootstrap Bundle with Popper -->
+                <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+                {% block scripts %}{% endblock %}
+            </body>
+
+            </html>

@@ -43,7 +43,7 @@ class IptablesManager:
                 # Base command structure
                 cmd = ["iptables"]
                 
-                if rule.forward_type == 'NAT':
+                if user.forward_mode == 'NAT':
                     # NAT (Masquerade)
                     # iptables -t nat -A POSTROUTING -s <user_ip> -d <dest_ip> -j MASQUERADE
                     cmd.extend(["-t", "nat", "-A", "POSTROUTING"])
@@ -57,7 +57,7 @@ class IptablesManager:
                             
                     cmd.extend(["-j", "MASQUERADE"])
                     
-                elif rule.forward_type == 'ROUTE':
+                else: # ROUTE
                     # Forwarding
                     # iptables -A FORWARD -s <user_ip> -d <dest_ip> -j <action>
                     cmd.extend(["-A", "FORWARD"])
