@@ -9,44 +9,19 @@ class IptablesManager:
     def __init__(self):
         self.chain_name = "FIREWALL_MANAGER"
 
-    def generate_rules(self, users):
+    def generate_iptables_file_content(self, users):
         """
-        Generates a list of iptables commands based on the users and their rules.
+        Generates the content for an iptables-restore file.
         """
-        commands = []
-        
-        # 1. Flush and recreate custom chains to ensure clean state
-        # We use a custom chain to avoid messing up other system rules too much
-        commands.append(f"iptables -N {self.chain_name}")
-        commands.append(f"iptables -F {self.chain_name}")
-        
-        # Ensure we have a jump from FORWARD to our chain
-        # This might duplicate if run multiple times without cleanup, 
-        # but 'apply_rules' should handle cleanup or we can check existence.
-        # For simplicity in this script, we'll assume we flush FORWARD or manage it carefully.
-        # Better approach: Flush FORWARD and re-add the jump (aggressive) 
-        # OR just insert if not exists. 
-        # Let's go with a safer approach: Just generate the rules for the custom chain.
-        # The user of this class is responsible for hooking the chain.
-        
-        # Actually, the user wants to manage the firewall. 
-        # Let's define a standard set of commands to reset and apply.
-        
-        # Reset standard chains (Caution: this clears everything!)
-        # commands.append("iptables -F FORWARD")
-        # commands.append("iptables -t nat -F POSTROUTING")
-        
-        # Let's stick to specific rules for users as requested.
-        
+        filter_rules = []
+        nat_rules = []
+
         for user in users:
             for rule in user.rules:
-                # Base command structure
-                cmd = ["iptables"]
-                
                 if user.forward_mode == 'NAT':
                     # NAT (Masquerade)
-                    # iptables -t nat -A POSTROUTING -s <user_ip> -d <dest_ip> -j MASQUERADE
-                    cmd.extend(["-t", "nat", "-A", "POSTROUTING"])
+                    # -A POSTROUTING -s <user_ip> -d <dest_ip> -j MASQUERADE
+                    cmd = ["-A", "POSTROUTING"]
                     cmd.extend(["-s", user.ip_address])
                     cmd.extend(["-d", rule.destination_ip])
                     
@@ -56,11 +31,12 @@ class IptablesManager:
                             cmd.extend(["--dport", str(rule.destination_port)])
                             
                     cmd.extend(["-j", "MASQUERADE"])
+                    nat_rules.append(" ".join(cmd))
                     
                 else: # ROUTE
                     # Forwarding
-                    # iptables -A FORWARD -s <user_ip> -d <dest_ip> -j <action>
-                    cmd.extend(["-A", "FORWARD"])
+                    # -A FORWARD -s <user_ip> -d <dest_ip> -j <action>
+                    cmd = ["-A", "FORWARD"]
                     cmd.extend(["-s", user.ip_address])
                     cmd.extend(["-d", rule.destination_ip])
                     
@@ -70,38 +46,61 @@ class IptablesManager:
                             cmd.extend(["--dport", str(rule.destination_port)])
                             
                     cmd.extend(["-j", rule.action])
-                
-                commands.append(" ".join(cmd))
-                
-        return commands
-
-    def apply_rules(self, commands):
-        """
-        Executes the list of commands.
-        """
-        # First, flush relevant chains to avoid duplicates
-        # This is a simplified approach. In production, you'd want atomic updates (iptables-restore).
-        flush_cmds = [
-            "iptables -F FORWARD",
-            "iptables -t nat -F POSTROUTING"
-        ]
+                    filter_rules.append(" ".join(cmd))
         
-        for cmd in flush_cmds:
-            self._run_command(cmd)
-            
-        for cmd in commands:
-            self._run_command(cmd)
+        # Build the content
+        lines = []
+        
+        # Filter Table
+        lines.append("*filter")
+        # We do NOT set policies here to avoid overriding existing ones if using -n
+        # But we DO flush the chains we manage
+        lines.append("-F FORWARD")
+        lines.extend(filter_rules)
+        lines.append("COMMIT")
+        
+        # NAT Table
+        lines.append("*nat")
+        lines.append("-F POSTROUTING")
+        lines.extend(nat_rules)
+        lines.append("COMMIT")
+        
+        return "\n".join(lines) + "\n"
 
-    def _run_command(self, cmd):
+    def apply_rules(self, users):
+        """
+        Generates the rules file and applies it using iptables-restore.
+        """
+        content = self.generate_iptables_file_content(users)
+        
         try:
-            logger.info(f"Running: {cmd}")
-            # subprocess.run(cmd, shell=True, check=True, capture_output=True)
-            # For safety in this environment, we will just log it if we are not root or on windows
-            # But the user asked for the app. 
-            # We will try to run it, but catch errors gracefully.
-            subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            # Write to a temporary file
+            import tempfile
+            import os
+            
+            fd, path = tempfile.mkstemp(text=True)
+            try:
+                with os.fdopen(fd, 'w') as tmp:
+                    tmp.write(content)
+                
+                # Apply using iptables-restore -n (no flush of other chains)
+                cmd = f"iptables-restore -n < {path}"
+                logger.info(f"Running: {cmd}")
+                
+                # In a real environment, we would run this:
+                # subprocess.run(cmd, shell=True, check=True, stderr=subprocess.PIPE)
+                
+                # For this environment/demo, we simulate or try-catch
+                subprocess.run(cmd, shell=True, check=True, stderr=subprocess.PIPE)
+                
+            finally:
+                os.remove(path)
+                
         except subprocess.CalledProcessError as e:
-            logger.error(f"Error running command: {cmd}")
-            logger.error(f"Stderr: {e.stderr.decode()}")
-            # Don't raise, just log, so one failure doesn't stop everything?
-            # Or maybe we should raise. Let's log for now.
+            logger.error(f"Error applying rules: {e}")
+            if e.stderr:
+                logger.error(f"Stderr: {e.stderr.decode()}")
+            raise e
+        except Exception as e:
+            logger.error(f"An error occurred: {e}")
+            raise e

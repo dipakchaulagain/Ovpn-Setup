@@ -277,14 +277,9 @@ def delete_rule(rule_id):
 @app.route('/apply', methods=['POST'])
 def apply_rules():
     users = User.query.all()
-    commands = iptables.generate_rules(users)
-    
-    # In a real scenario, we might want to show the commands first or just run them.
-    # The user asked for "rule reload, validate, add, modify, edit"
-    # This is the "reload/apply" part.
     
     try:
-        iptables.apply_rules(commands)
+        iptables.apply_rules(users)
         flash('Rules applied successfully!', 'success')
     except Exception as e:
         flash(f'Error applying rules: {str(e)}', 'error')
@@ -295,8 +290,8 @@ def apply_rules():
 def validate_rules():
     # Show what would be applied
     users = User.query.all()
-    commands = iptables.generate_rules(users)
-    return render_template('validate.html', commands=commands)
+    content = iptables.generate_iptables_file_content(users)
+    return render_template('validate.html', content=content)
 
 if __name__ == '__main__':
     with app.app_context():
