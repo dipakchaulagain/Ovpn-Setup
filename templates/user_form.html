@@ -52,9 +52,37 @@
                         <div class="mb-3">
                             <label for="user_type" class="form-label">User Type</label>
                             <select class="form-select" id="user_type" name="user_type">
-                                <div class="form-text text-success"><i class="fas fa-check-circle me-1"></i>
-                                    Recommended: {{
-                                    recommended_ip }}</div>
+                                <option value="employee" {% if user and user.user_type=='employee' %}selected{% endif
+                                    %}>
+                                    Employee</option>
+                                <option value="vendor" {% if user and user.user_type=='vendor' %}selected{% endif %}>
+                                    Vendor
+                                </option>
+                                <option value="other" {% if user and user.user_type=='other' %}selected{% endif %}>Other
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="forward_mode" class="form-label">Forwarding Mode</label>
+                            <select class="form-select" id="forward_mode" name="forward_mode">
+                                <option value="ROUTE" {% if not user or user.forward_mode=='ROUTE' %}selected{% endif
+                                    %}>
+                                    ROUTE (Direct Forwarding)</option>
+                                <option value="NAT" {% if user and user.forward_mode=='NAT' %}selected{% endif %}>NAT
+                                    (Masquerade)</option>
+                            </select>
+                            <div class="form-text">Choose 'NAT' if the user needs to access the internet through the
+                                firewall's IP.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="ip_address" class="form-label">IP Address <span
+                                    class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="ip_address" name="ip_address"
+                                value="{{ user.ip_address if user else recommended_ip }}" required>
+                            <div class="form-text text-success"><i class="fas fa-check-circle me-1"></i> Recommended: {{
+                                recommended_ip }}</div>
                         </div>
 
                         <div class="d-grid gap-2">
